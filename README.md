@@ -1,1 +1,7 @@
-# roborock-garage
+# Roborock Garage
+
+## Deployment
+
+```sh
+sh ./deploy.sh
+```
