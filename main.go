@@ -3,7 +3,8 @@ package main
 import (
 	"log"
 	"roborock-garage/drv8825"
-	"time"
+
+	"github.com/vkorn/go-miio"
 )
 
 func main() {
@@ -21,9 +22,35 @@ func main() {
 	}
 	defer stepper.Stop()
 
+	vacuum, err := miio.NewVacuum("<ip>", "<token>")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	go func() {
+		for msg := range vacuum.UpdateChan {
+			log.Printf("Got message %+v", msg.State)
+			state := msg.State.(*miio.VacuumState)
+			switch state.State {
+			case miio.VacStateCleaning:
+				openGarage(stepper)
+			case miio.VacStateCharging:
+				closeGarage(stepper)
+			}
+		}
+	}()
+
+	vacuum.UpdateStatus()
+}
+
+func openGarage(stepper *drv8825.Driver) {
 	stepper.Enable()
 	stepper.Forward(200)
-	time.Sleep(1 * time.Second)
+	stepper.Disable()
+}
+
+func closeGarage(stepper *drv8825.Driver) {
+	stepper.Enable()
 	stepper.Backward(200)
 	stepper.Disable()
 }

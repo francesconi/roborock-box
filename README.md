@@ -2,6 +2,15 @@
 
 ## Prerequisites
 
+### Hardware
+
+- Raspberry Pi
+- NEMA 17 Stepper Motor
+- Stepper Motor Controller
+- DRV8825 Stepper Motor Driver
+
+### Software
+
 - [Just](https://github.com/casey/just#installation)
 
 ## Deployment
