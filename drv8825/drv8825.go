@@ -1,25 +1,15 @@
 package drv8825
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/stianeikeland/go-rpio/v4"
 )
 
-type Driver struct {
-	en            rpio.Pin
-	step          rpio.Pin
-	dir           rpio.Pin
-	ms1, ms2, ms3 rpio.Pin
-	mode          StepMode
-}
-
-type StepMode int
+type StepMode uint8
 
 const (
-	_ StepMode = iota
-	StepModeFull
+	StepModeFull StepMode = iota + 1
 	StepModeHalf
 	StepModeQuarter
 	StepModeEighth
@@ -27,20 +17,46 @@ const (
 	StepModeThirtySecond
 )
 
-type Direction int
+func (sm StepMode) degreePerStep() float64 {
+	switch sm {
+	default:
+		fallthrough
+	case StepModeFull:
+		return 1.8
+	case StepModeHalf:
+		return 0.9
+	case StepModeQuarter:
+		return 0.45
+	case StepModeEighth:
+		return 0.225
+	case StepModeSixteenth:
+		return 0.1125
+	case StepModeThirtySecond:
+		return 0.05625
+	}
+}
 
-const (
-	_ Direction = iota
-	DirectionForward
-	DirectionBackward
-)
+func (sm StepMode) stepsPerRevolution() uint {
+	return uint(360 / sm.degreePerStep())
+}
+
+func (sm StepMode) delayPerStep(rpm uint) time.Duration {
+	return time.Minute / time.Duration(sm.stepsPerRevolution()*rpm)
+}
 
 type Config struct {
-	EN            uint8
-	STEP          uint8
-	DIR           uint8
-	MS1, MS2, MS3 uint8
-	Mode          StepMode
+	PinEnable    uint8
+	PinStep      uint8
+	PinDirection uint8
+	StepMode     StepMode
+}
+
+type Driver struct {
+	en       rpio.Pin
+	step     rpio.Pin
+	dir      rpio.Pin
+	stepMode StepMode
+	rpm      uint
 }
 
 func New(cfg Config) (*Driver, error) {
@@ -50,24 +66,17 @@ func New(cfg Config) (*Driver, error) {
 	}
 
 	d := &Driver{
-		en:   rpio.Pin(cfg.EN),
-		step: rpio.Pin(cfg.STEP),
-		dir:  rpio.Pin(cfg.DIR),
-		ms1:  rpio.Pin(cfg.MS1),
-		ms2:  rpio.Pin(cfg.MS2),
-		ms3:  rpio.Pin(cfg.MS3),
+		en:       rpio.Pin(cfg.PinEnable),
+		step:     rpio.Pin(cfg.PinStep),
+		dir:      rpio.Pin(cfg.PinDirection),
+		stepMode: cfg.StepMode,
 	}
 
 	d.en.Output()
 	d.step.Output()
 	d.dir.Output()
-	d.ms1.Output()
-	d.ms2.Output()
-	d.ms3.Output()
-
-	if err = d.SetMode(cfg.Mode); err != nil {
-		return nil, err
-	}
+	d.step.Low()
+	d.dir.Low()
 
 	return d, nil
 }
@@ -80,71 +89,29 @@ func (d *Driver) Disable() {
 	d.en.High()
 }
 
-func (d *Driver) Forward(steps int) error {
-	return d.Move(steps, DirectionForward)
-}
-
-func (d *Driver) Backward(steps int) error {
-	return d.Move(steps, DirectionBackward)
-}
-
-func (d *Driver) Move(steps int, direction Direction) error {
-	switch direction {
-	case DirectionForward:
-		d.dir.High()
-	case DirectionBackward:
-		d.dir.Low()
-	default:
-		return fmt.Errorf("drv8825: invalid direction %d", direction)
+func (d *Driver) Move(steps int) {
+	if steps == 0 {
+		return
 	}
-
-	delay := 500 * time.Microsecond
+	if steps > 0 {
+		d.dir.High()
+	} else {
+		d.dir.Low()
+		steps = -steps
+	}
+	delay := d.stepMode.delayPerStep(d.rpm)
 	for i := 0; i < steps; i++ {
 		d.step.High()
 		time.Sleep(delay)
 		d.step.Low()
 		time.Sleep(delay)
 	}
-
-	return nil
 }
 
-func (d *Driver) Stop() error {
-	if err := rpio.Close(); err != nil {
-		return err
-	}
-	return nil
+func (d *Driver) Close() error {
+	return rpio.Close()
 }
 
-func (d *Driver) SetMode(mode StepMode) error {
-	switch mode {
-	case StepModeFull:
-		d.ms1.Low()
-		d.ms2.Low()
-		d.ms3.Low()
-	case StepModeHalf:
-		d.ms1.High()
-		d.ms2.Low()
-		d.ms3.Low()
-	case StepModeQuarter:
-		d.ms1.Low()
-		d.ms2.High()
-		d.ms3.Low()
-	case StepModeEighth:
-		d.ms1.High()
-		d.ms2.High()
-		d.ms3.Low()
-	case StepModeSixteenth:
-		d.ms1.Low()
-		d.ms2.Low()
-		d.ms3.High()
-	case StepModeThirtySecond:
-		d.ms1.High()
-		d.ms2.Low()
-		d.ms3.High()
-	default:
-		return fmt.Errorf("drv8825: invalid format %d", mode)
-	}
-	d.mode = mode
-	return nil
+func (d *Driver) SetSpeed(rpm uint) {
+	d.rpm = rpm
 }
