@@ -1,6 +1,6 @@
 package main
 
-import "roborock-garage/drv8825"
+import "github.com/francesconi/roborock-garage/drv8825"
 
 type Garage struct {
 	stepper *drv8825.Driver
