@@ -1,4 +1,4 @@
-# Roborock Garage
+# Roborock Garage 🤖🏠
 
 ## Prerequisites
 
