@@ -34,6 +34,6 @@ func (g Garage) CloseDoor() {
 	g.stepper.Disable()
 }
 
-func (g Garage) Close() error {
+func (g Garage) Cleanup() error {
 	return g.stepper.Close()
 }

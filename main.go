@@ -11,7 +11,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer garage.Close()
+	defer garage.Cleanup()
 
 	vacuum, err := miio.NewVacuum("<ip>", "<token>")
 	if err != nil {
