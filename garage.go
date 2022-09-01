@@ -24,13 +24,13 @@ func NewGarage() (*Garage, error) {
 
 func (g Garage) OpenDoor() {
 	g.stepper.Enable()
-	g.stepper.Move(200)
+	g.stepper.Move(-200)
 	g.stepper.Disable()
 }
 
 func (g Garage) CloseDoor() {
 	g.stepper.Enable()
-	g.stepper.Move(-200)
+	g.stepper.Move(200)
 	g.stepper.Disable()
 }
 

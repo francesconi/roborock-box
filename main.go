@@ -3,33 +3,36 @@ package main
 import (
 	"log"
 
-	"github.com/vkorn/go-miio"
+	"github.com/kardianos/service"
 )
 
 func main() {
-	garage, err := NewGarage()
+	prg, err := NewProgram()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer garage.Cleanup()
-
-	vacuum, err := miio.NewVacuum("<ip>", "<token>")
+	cfg := &service.Config{
+		Name:        "roborock-garage",
+		DisplayName: "Roborock Garage",
+	}
+	s, err := service.New(prg, cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	go func() {
-		for msg := range vacuum.UpdateChan {
-			log.Printf("Got message %+v", msg.State)
-			state := msg.State.(*miio.VacuumState)
-			switch state.State {
-			case miio.VacStateCleaning:
-				garage.OpenDoor()
-			case miio.VacStateCharging:
-				garage.CloseDoor()
-			}
-		}
-	}()
+	// status, err := s.Status()
+	// if errors.Is(err, service.ErrNotInstalled) || status == service.StatusUnknown {
+	// 	s.Install()
+	// 	if err = s.Start(); err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// } else {
+	// 	if err = s.Run(); err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// }
 
-	vacuum.UpdateStatus()
+	if err = s.Run(); err != nil {
+		log.Fatal(err)
+	}
 }
