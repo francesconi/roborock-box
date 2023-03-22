@@ -1,5 +1,5 @@
 module := "roborock-garage"
-ip := "192.168.x.x"
+ip := "192.168.178.25"
 
 build:
     GOOS=linux GOARCH=arm GOARM=6 go build -o {{module}}

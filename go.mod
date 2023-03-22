@@ -5,10 +5,8 @@ go 1.18
 require (
 	github.com/kardianos/service v1.2.2
 	github.com/stianeikeland/go-rpio/v4 v4.6.0
-	github.com/vkorn/go-miio v0.0.0-20180929223642-adf1adb6425f
+	github.com/vkorn/go-miio v0.0.0-20230316082404-e59e42135268
 )
-
-replace github.com/vkorn/go-miio => github.com/francesconi/go-miio v0.0.0-20230314075917-2917d4107018
 
 require (
 	github.com/benbjohnson/clock v1.3.0 // indirect

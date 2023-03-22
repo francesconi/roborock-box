@@ -20,18 +20,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// status, err := s.Status()
-	// if errors.Is(err, service.ErrNotInstalled) || status == service.StatusUnknown {
-	// 	s.Install()
-	// 	if err = s.Start(); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// } else {
-	// 	if err = s.Run(); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }
-
 	if err = s.Run(); err != nil {
 		log.Fatal(err)
 	}

@@ -1,9 +1,17 @@
 package main
 
-import "github.com/francesconi/roborock-garage/drv8825"
+import (
+	"log"
+	"sync"
+
+	"github.com/francesconi/roborock-garage/drv8825"
+)
 
 type Garage struct {
+	mu      sync.Mutex
 	stepper *drv8825.Driver
+
+	DoorOpen bool
 }
 
 func NewGarage() (*Garage, error) {
@@ -17,23 +25,40 @@ func NewGarage() (*Garage, error) {
 		return nil, err
 	}
 
-	stepper.SetSpeed(60)
+	stepper.SetSpeed(600)
 
-	return &Garage{stepper}, nil
+	return &Garage{
+		mu:      sync.Mutex{},
+		stepper: stepper,
+	}, nil
 }
 
-func (g Garage) OpenDoor() {
-	g.stepper.Enable()
-	g.stepper.Move(-200)
-	g.stepper.Disable()
+func (g *Garage) OpenDoor() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	if !g.DoorOpen {
+		log.Print("Opening door...")
+		g.stepper.Enable()
+		g.stepper.Move(-4000)
+		g.stepper.Disable()
+		g.DoorOpen = true
+	}
 }
 
-func (g Garage) CloseDoor() {
-	g.stepper.Enable()
-	g.stepper.Move(200)
-	g.stepper.Disable()
+func (g *Garage) CloseDoor() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	if g.DoorOpen {
+		log.Print("Closing door...")
+		g.stepper.Enable()
+		g.stepper.Move(4000)
+		g.stepper.Disable()
+		g.DoorOpen = false
+	}
 }
 
-func (g Garage) Cleanup() error {
+func (g *Garage) Cleanup() error {
 	return g.stepper.Close()
 }

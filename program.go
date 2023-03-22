@@ -20,16 +20,18 @@ func NewProgram() (*program, error) {
 		return nil, err
 	}
 
-	// vacuum, err := miio.NewVacuum("<ip>", "<token>")
-	// if err != nil {
-	// 	defer garage.Cleanup()
-	// 	return nil, err
-	// }
+	ip := ""
+	token := ""
+	vacuum, err := miio.NewVacuum(ip, token)
+	if err != nil {
+		defer garage.Cleanup()
+		return nil, err
+	}
 
 	return &program{
 		exit:   make(chan struct{}),
 		garage: garage,
-		vacuum: nil,
+		vacuum: vacuum,
 	}, nil
 }
 
@@ -42,25 +44,26 @@ func (p program) Start(s service.Service) error {
 func (p program) run() error {
 	log.Printf("Service running on %v.", service.Platform())
 
-	// go func() {
-	// 	for msg := range p.vacuum.UpdateChan {
-	// 		log.Printf("Got message %+v", msg.State)
-	// 		state := msg.State.(*miio.VacuumState)
-	// 		switch state.State {
-	// 		case miio.VacStateCleaning:
-	// 			p.garage.OpenDoor()
-	// 		case miio.VacStateCharging:
-	// 			p.garage.CloseDoor()
-	// 		}
-	// 	}
-	// }()
+	go func() {
+		for msg := range p.vacuum.UpdateChan {
+			state := msg.State.(*miio.VacuumState)
+			log.Printf("Got state %+v", state.State)
+
+			switch state.State {
+			case miio.VacStateCleaning:
+				p.garage.OpenDoor()
+			case miio.VacStateCharging:
+				p.garage.CloseDoor()
+			}
+		}
+	}()
 
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
 		case <-ticker.C:
 			log.Print("Requesting vacuum status update...")
-			// p.vacuum.UpdateStatus()
+			p.vacuum.UpdateStatus()
 		case <-p.exit:
 			ticker.Stop()
 			p.garage.Cleanup()
