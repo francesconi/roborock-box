@@ -1,10 +1,9 @@
 package main
 
 import (
-	"log"
 	"sync"
 
-	"github.com/francesconi/roborock-garage/drv8825"
+	"github.com/francesconi/roborock-box/drv8825"
 )
 
 type Garage struct {
@@ -38,7 +37,6 @@ func (g *Garage) OpenDoor() {
 	defer g.mu.Unlock()
 
 	if !g.DoorOpen {
-		log.Print("Opening door...")
 		g.stepper.Enable()
 		g.stepper.Move(-4000)
 		g.stepper.Disable()
@@ -51,7 +49,6 @@ func (g *Garage) CloseDoor() {
 	defer g.mu.Unlock()
 
 	if g.DoorOpen {
-		log.Print("Closing door...")
 		g.stepper.Enable()
 		g.stepper.Move(4000)
 		g.stepper.Disable()

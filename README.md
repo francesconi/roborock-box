@@ -1,17 +1,15 @@
-# Roborock Garage 🤖🏠
+# Roborock Box 🤖🏠
 
-## Prerequisites
-
-### Hardware
+## Hardware Prerequisites
 
 - Raspberry Pi
 - NEMA 17 Stepper Motor
 - Stepper Motor Controller
 - DRV8825 Stepper Motor Driver
 
-### Software
+## Obtain vacuum token
 
-- [Just](https://github.com/casey/just#installation)
+https://python-miio.readthedocs.io/en/latest/discovery.html#obtaining-tokens
 
 ## Deployment
 

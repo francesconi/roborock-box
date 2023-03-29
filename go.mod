@@ -1,4 +1,4 @@
-module github.com/francesconi/roborock-garage
+module github.com/francesconi/roborock-box
 
 go 1.18
 
@@ -7,6 +7,8 @@ require (
 	github.com/stianeikeland/go-rpio/v4 v4.6.0
 	github.com/vkorn/go-miio v0.0.0-20230316082404-e59e42135268
 )
+
+replace github.com/vkorn/go-miio => github.com/francesconi/go-miio v0.0.0-20230329144302-f4a0e5884156
 
 require (
 	github.com/benbjohnson/clock v1.3.0 // indirect

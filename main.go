@@ -1,26 +1,40 @@
 package main
 
 import (
+	"errors"
 	"log"
 
 	"github.com/kardianos/service"
+	"github.com/vkorn/go-miio"
 )
 
 func main() {
-	prg, err := NewProgram()
-	if err != nil {
-		log.Fatal(err)
-	}
-	cfg := &service.Config{
-		Name:        "roborock-garage",
-		DisplayName: "Roborock Garage",
-	}
-	s, err := service.New(prg, cfg)
+	p, err := NewProgram()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err = s.Run(); err != nil {
+	svcConfig := &service.Config{
+		Name:        "roborock-garage",
+		DisplayName: "Roborock Garage",
+		Dependencies: []string{
+			"Requires=network.target",
+			"After=network-online.target syslog.target",
+		},
+	}
+	svc, err := service.New(p, svcConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	status, err := svc.Status()
+	if errors.Is(err, service.ErrNotInstalled) || status == service.StatusUnknown {
+		svc.Install()
+	}
+
+	miio.LOGGER.SetLevel(miio.LogLevelInfo)
+
+	if err = svc.Run(); err != nil {
 		log.Fatal(err)
 	}
 }

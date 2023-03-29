@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"time"
 
 	"github.com/kardianos/service"
@@ -9,9 +9,11 @@ import (
 )
 
 type program struct {
-	garage *Garage
-	vacuum *miio.Vacuum
-	exit   chan struct{}
+	garage   *Garage
+	vacuum   *miio.Vacuum
+	vacState miio.VacState
+	logger   service.Logger
+	exit     chan struct{}
 }
 
 func NewProgram() (*program, error) {
@@ -36,20 +38,33 @@ func NewProgram() (*program, error) {
 }
 
 func (p program) Start(s service.Service) error {
-	log.Print("Starting service...")
+	l, err := s.Logger(nil)
+	if err != nil {
+		return err
+	}
+	p.logger = l
+
 	go p.run()
 	return nil
 }
 
 func (p program) run() error {
-	log.Printf("Service running on %v.", service.Platform())
-
 	go func() {
 		for msg := range p.vacuum.UpdateChan {
-			state := msg.State.(*miio.VacuumState)
-			log.Printf("Got state %+v", state.State)
+			s, ok := msg.State.(*miio.VacuumState)
+			if !ok || p.vacState == s.State {
+				continue
+			}
+			p.vacState = s.State
 
-			switch state.State {
+			vacStateStr, err := vacStateString(s.State)
+			if err != nil {
+				p.logger.Error(err)
+			} else {
+				p.logger.Infof("Got state %s", vacStateStr)
+			}
+
+			switch s.State {
 			case miio.VacStateCleaning:
 				p.garage.OpenDoor()
 			case miio.VacStateCharging:
@@ -62,7 +77,6 @@ func (p program) run() error {
 	for {
 		select {
 		case <-ticker.C:
-			log.Print("Requesting vacuum status update...")
 			p.vacuum.UpdateStatus()
 		case <-p.exit:
 			ticker.Stop()
@@ -73,13 +87,46 @@ func (p program) run() error {
 }
 
 func (p program) Stop(s service.Service) error {
-	log.Print("Stopping service...")
 	close(p.exit)
 	return nil
 }
 
 func (p program) Shutdown(s service.Service) error {
-	log.Print("Shutting down service...")
 	close(p.exit)
 	return nil
+}
+
+func vacStateString(s miio.VacState) (string, error) {
+	switch s {
+	case miio.VacStateUnknown:
+		return "VacStateUnknown", nil
+	case miio.VacStateInitiating:
+		return "VacStateInitiating", nil
+	case miio.VacStateSleeping:
+		return "VacStateSleeping", nil
+	case miio.VacStateWaiting:
+		return "VacStateWaiting", nil
+	case miio.VacStateCleaning:
+		return "VacStateCleaning", nil
+	case miio.VacStateReturning:
+		return "VacStateReturning", nil
+	case miio.VacStateCharging:
+		return "VacStateCharging", nil
+	case miio.VacStatePaused:
+		return "VacStatePaused", nil
+	case miio.VacStateSpot:
+		return "VacStateSpot", nil
+	case miio.VacStateShuttingDown:
+		return "VacStateShuttingDown", nil
+	case miio.VacStateUpdating:
+		return "VacStateUpdating", nil
+	case miio.VacStateDocking:
+		return "VacStateDocking", nil
+	case miio.VacStateZone:
+		return "VacStateZone", nil
+	case miio.VacStateFull:
+		return "VacStateFull", nil
+	default:
+		return "", fmt.Errorf("miio: unknown VacState: %d", s)
+	}
 }
