@@ -15,8 +15,8 @@ func main() {
 	}
 
 	svcConfig := &service.Config{
-		Name:        "roborock-garage",
-		DisplayName: "Roborock Garage",
+		Name:        "roborock-box",
+		DisplayName: "Roborock Box",
 		Dependencies: []string{
 			"Requires=network.target",
 			"After=network-online.target syslog.target",

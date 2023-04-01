@@ -6,14 +6,14 @@ import (
 	"github.com/francesconi/roborock-box/drv8825"
 )
 
-type Garage struct {
+type Box struct {
 	mu      sync.Mutex
 	stepper *drv8825.Driver
 
 	DoorOpen bool
 }
 
-func NewGarage() (*Garage, error) {
+func NewBox() (*Box, error) {
 	stepper, err := drv8825.New(drv8825.Config{
 		PinEnable:    24,
 		PinStep:      23,
@@ -26,13 +26,13 @@ func NewGarage() (*Garage, error) {
 
 	stepper.SetSpeed(600)
 
-	return &Garage{
+	return &Box{
 		mu:      sync.Mutex{},
 		stepper: stepper,
 	}, nil
 }
 
-func (g *Garage) OpenDoor() {
+func (g *Box) OpenDoor() {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
@@ -44,7 +44,7 @@ func (g *Garage) OpenDoor() {
 	}
 }
 
-func (g *Garage) CloseDoor() {
+func (g *Box) CloseDoor() {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
@@ -56,6 +56,6 @@ func (g *Garage) CloseDoor() {
 	}
 }
 
-func (g *Garage) Cleanup() error {
+func (g *Box) Cleanup() error {
 	return g.stepper.Close()
 }

@@ -9,7 +9,7 @@ import (
 )
 
 type program struct {
-	garage   *Garage
+	box      *Box
 	vacuum   *miio.Vacuum
 	vacState miio.VacState
 	logger   service.Logger
@@ -17,7 +17,7 @@ type program struct {
 }
 
 func NewProgram() (*program, error) {
-	garage, err := NewGarage()
+	box, err := NewBox()
 	if err != nil {
 		return nil, err
 	}
@@ -26,13 +26,13 @@ func NewProgram() (*program, error) {
 	token := ""
 	vacuum, err := miio.NewVacuum(ip, token)
 	if err != nil {
-		defer garage.Cleanup()
+		defer box.Cleanup()
 		return nil, err
 	}
 
 	return &program{
 		exit:   make(chan struct{}),
-		garage: garage,
+		box:    box,
 		vacuum: vacuum,
 	}, nil
 }
@@ -66,9 +66,9 @@ func (p program) run() error {
 
 			switch s.State {
 			case miio.VacStateCleaning:
-				p.garage.OpenDoor()
+				p.box.OpenDoor()
 			case miio.VacStateCharging:
-				p.garage.CloseDoor()
+				p.box.CloseDoor()
 			}
 		}
 	}()
@@ -80,7 +80,7 @@ func (p program) run() error {
 			p.vacuum.UpdateStatus()
 		case <-p.exit:
 			ticker.Stop()
-			p.garage.Cleanup()
+			p.box.Cleanup()
 			return nil
 		}
 	}
