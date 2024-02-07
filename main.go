@@ -9,9 +9,11 @@ import (
 )
 
 func main() {
+	miio.LOGGER = &noopLogger{}
+	
 	p, err := NewProgram()
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	svcConfig := &service.Config{
@@ -24,7 +26,7 @@ func main() {
 	}
 	svc, err := service.New(p, svcConfig)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	status, err := svc.Status()
@@ -32,9 +34,7 @@ func main() {
 		svc.Install()
 	}
 
-	miio.LOGGER.SetLevel(miio.LogLevelInfo)
-
 	if err = svc.Run(); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 }

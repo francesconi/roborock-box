@@ -16,14 +16,12 @@ type program struct {
 	exit     chan struct{}
 }
 
-func NewProgram() (*program, error) {
+func NewProgram(ip, token string) (*program, error) {
 	box, err := NewBox()
 	if err != nil {
 		return nil, err
 	}
 
-	ip := ""
-	token := ""
 	vacuum, err := miio.NewVacuum(ip, token)
 	if err != nil {
 		defer box.Cleanup()
