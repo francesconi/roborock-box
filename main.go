@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"log"
 
 	"github.com/kardianos/service"
 	"github.com/vkorn/go-miio"

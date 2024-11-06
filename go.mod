@@ -10,8 +10,8 @@ require (
 
 require (
 	github.com/benbjohnson/clock v1.3.5 // indirect
-	github.com/lunixbochs/struc v0.0.0-20200707160740-784aaebc1d40 // indirect
+	github.com/lunixbochs/struc v0.0.0-20241101090106-8d528fa2c543 // indirect
 	github.com/nickw444/miio-go v0.0.0-20190825225226-379bc4c72748 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/sys v0.26.0 // indirect
 )
