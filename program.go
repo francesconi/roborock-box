@@ -1,130 +1,54 @@
 package main
 
 import (
-	"fmt"
-	"time"
+	"log/slog"
+	"sync"
 
 	"github.com/kardianos/service"
-	"github.com/vkorn/go-miio"
 )
 
 type program struct {
-	box      *Box
-	vacuum   *miio.Vacuum
-	vacState miio.VacState
-	logger   service.Logger
-	exit     chan struct{}
+	watch  WatchFunc
+	boxCfg BoxConfig
+	once   sync.Once
+	exit   chan struct{}
 }
 
-func NewProgram(ip, token string) (*program, error) {
-	box, err := NewBox()
-	if err != nil {
-		return nil, err
-	}
-
-	vacuum, err := miio.NewVacuum(ip, token)
-	if err != nil {
-		defer box.Cleanup()
-		return nil, err
-	}
-
+func newProgram(watch WatchFunc, boxCfg BoxConfig) *program {
 	return &program{
+		watch:  watch,
+		boxCfg: boxCfg,
 		exit:   make(chan struct{}),
-		box:    box,
-		vacuum: vacuum,
-	}, nil
+	}
 }
 
-func (p program) Start(s service.Service) error {
-	l, err := s.Logger(nil)
-	if err != nil {
-		return err
-	}
-	p.logger = l
-
+func (p *program) Start(s service.Service) error {
 	go p.run()
 	return nil
 }
 
-func (p program) run() error {
-	go func() {
-		for msg := range p.vacuum.UpdateChan {
-			s, ok := msg.State.(*miio.VacuumState)
-			if !ok || p.vacState == s.State {
-				continue
-			}
-			p.vacState = s.State
+func (p *program) Stop(s service.Service) error {
+	p.once.Do(func() { close(p.exit) })
+	return nil
+}
 
-			vacStateStr, err := vacStateString(s.State)
-			if err != nil {
-				p.logger.Error(err)
-			} else {
-				p.logger.Infof("Got state %s", vacStateStr)
-			}
+func (p *program) Shutdown(s service.Service) error {
+	return p.Stop(s)
+}
 
-			switch s.State {
-			case miio.VacStateCleaning:
-				p.box.OpenDoor()
-			case miio.VacStateCharging:
-				p.box.CloseDoor()
-			}
+func (p *program) run() {
+	box, err := NewBox(p.boxCfg)
+	if err != nil {
+		slog.Error("Failed to initialize box", slog.Any("error", err))
+		return
+	}
+	defer func() {
+		if err := box.Cleanup(); err != nil {
+			slog.Error("Box cleanup failed", slog.Any("error", err))
 		}
 	}()
 
-	ticker := time.NewTicker(1 * time.Second)
-	for {
-		select {
-		case <-ticker.C:
-			p.vacuum.UpdateStatus()
-		case <-p.exit:
-			ticker.Stop()
-			p.box.Cleanup()
-			return nil
-		}
-	}
-}
-
-func (p program) Stop(s service.Service) error {
-	close(p.exit)
-	return nil
-}
-
-func (p program) Shutdown(s service.Service) error {
-	close(p.exit)
-	return nil
-}
-
-func vacStateString(s miio.VacState) (string, error) {
-	switch s {
-	case miio.VacStateUnknown:
-		return "VacStateUnknown", nil
-	case miio.VacStateInitiating:
-		return "VacStateInitiating", nil
-	case miio.VacStateSleeping:
-		return "VacStateSleeping", nil
-	case miio.VacStateWaiting:
-		return "VacStateWaiting", nil
-	case miio.VacStateCleaning:
-		return "VacStateCleaning", nil
-	case miio.VacStateReturning:
-		return "VacStateReturning", nil
-	case miio.VacStateCharging:
-		return "VacStateCharging", nil
-	case miio.VacStatePaused:
-		return "VacStatePaused", nil
-	case miio.VacStateSpot:
-		return "VacStateSpot", nil
-	case miio.VacStateShuttingDown:
-		return "VacStateShuttingDown", nil
-	case miio.VacStateUpdating:
-		return "VacStateUpdating", nil
-	case miio.VacStateDocking:
-		return "VacStateDocking", nil
-	case miio.VacStateZone:
-		return "VacStateZone", nil
-	case miio.VacStateFull:
-		return "VacStateFull", nil
-	default:
-		return "", fmt.Errorf("miio: unknown VacState: %d", s)
+	if err := p.watch(p.exit, box.OpenDoor, box.CloseDoor); err != nil {
+		slog.Error("Watcher exited with error", slog.Any("error", err))
 	}
 }
