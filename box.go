@@ -4,15 +4,12 @@ import (
 	"sync"
 
 	"github.com/francesconi/roborock-box/drv8825"
+	"github.com/stianeikeland/go-rpio/v4"
 )
 
 type BoxConfig struct {
-	PinEnable    uint8
-	PinStep      uint8
-	PinDirection uint8
-	StepMode     drv8825.StepMode
-	RPM          uint
-	DoorSteps    int
+	Stepper   drv8825.Config
+	DoorSteps int
 }
 
 type Box struct {
@@ -23,16 +20,16 @@ type Box struct {
 }
 
 func NewBox(cfg BoxConfig) (*Box, error) {
-	stepper, err := drv8825.New(drv8825.Config{
-		PinEnable:    cfg.PinEnable,
-		PinStep:      cfg.PinStep,
-		PinDirection: cfg.PinDirection,
-		StepMode:     cfg.StepMode,
-	})
-	if err != nil {
+	if err := rpio.Open(); err != nil {
 		return nil, err
 	}
-	stepper.SetSpeed(cfg.RPM)
+
+	stepper, err := drv8825.New(cfg.Stepper)
+	if err != nil {
+		rpio.Close()
+		return nil, err
+	}
+
 	return &Box{stepper: stepper, doorSteps: cfg.DoorSteps}, nil
 }
 
@@ -59,5 +56,5 @@ func (b *Box) CloseDoor() {
 }
 
 func (b *Box) Cleanup() error {
-	return b.stepper.Close()
+	return rpio.Close()
 }

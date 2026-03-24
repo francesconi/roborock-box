@@ -1,6 +1,7 @@
 package drv8825
 
 import (
+	"errors"
 	"time"
 
 	"github.com/stianeikeland/go-rpio/v4"
@@ -61,6 +62,7 @@ type Config struct {
 	PinMode1     uint8 // M1 — optional, 0 = hardware-controlled
 	PinMode2     uint8 // M2 — optional, 0 = hardware-controlled
 	StepMode     StepMode
+	RPM          uint
 }
 
 type Driver struct {
@@ -72,8 +74,13 @@ type Driver struct {
 }
 
 func New(cfg Config) (*Driver, error) {
-	if err := rpio.Open(); err != nil {
-		return nil, err
+	if cfg.StepMode.degreePerStep == 0 {
+		return nil, errors.New("drv8825: StepMode must be set")
+	}
+
+	rpm := cfg.RPM
+	if rpm == 0 {
+		rpm = defaultRPM
 	}
 
 	d := &Driver{
@@ -81,7 +88,7 @@ func New(cfg Config) (*Driver, error) {
 		step:     rpio.Pin(cfg.PinStep),
 		dir:      rpio.Pin(cfg.PinDirection),
 		stepMode: cfg.StepMode,
-		rpm:      defaultRPM,
+		rpm:      rpm,
 	}
 
 	d.en.Output()
@@ -152,6 +159,3 @@ func (d *Driver) Move(steps int) {
 	}
 }
 
-func (d *Driver) Close() error {
-	return rpio.Close()
-}

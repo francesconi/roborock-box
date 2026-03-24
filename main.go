@@ -11,7 +11,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const envFile = "/etc/default/roborock-box"
+const (
+	svcName = "roborock-box"
+	envFile = "/etc/default/" + svcName
+)
 
 func main() {
 	// Suppress verbose logging from the miio library
@@ -22,7 +25,7 @@ func main() {
 	loadEnvFile(envFile)
 
 	svcConfig := &service.Config{
-		Name:        "roborock-box",
+		Name:        svcName,
 		DisplayName: "Roborock Box",
 		Description: "Automatically opens and closes the robot vacuum box.",
 		Dependencies: []string{
@@ -34,12 +37,14 @@ func main() {
 	ip, token := os.Getenv("IP"), os.Getenv("TOKEN")
 
 	p := newProgram(VacuumWatcher(ip, token), BoxConfig{
-		PinEnable:    24,
-		PinStep:      23,
-		PinDirection: 22,
-		StepMode:     drv8825.StepModeFull,
-		RPM:          300,
-		DoorSteps:    4000,
+		Stepper: drv8825.Config{
+			PinEnable:    24,
+			PinStep:      23,
+			PinDirection: 22,
+			StepMode:     drv8825.StepModeFull,
+			RPM:          300,
+		},
+		DoorSteps: 4000,
 	})
 
 	svc, err := service.New(p, svcConfig)

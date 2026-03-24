@@ -1,33 +1,31 @@
 # Roborock Box
 
-A Raspberry Pi service that automatically opens and closes a motorised box door based on your Roborock vacuum's state — the door opens when the robot starts cleaning and closes when it returns to the charger.
+A Raspberry Pi service that automatically opens and closes a motorised box door based on your Roborock vacuum's state. The door opens when the robot starts cleaning and closes when it returns to the charger.
 
 Alternatively, a light sensor can be used instead of the Wi-Fi vacuum integration.
 
 ## Hardware
 
-| Part | Notes |
-|---|---|
-| Raspberry Pi | Any model with GPIO |
-| NEMA 17 Stepper Motor | 1.8°/step (200 steps/revolution) |
-| DRV8825 Stepper Motor Driver | |
-| Stepper Motor Controller Board | |
+- Raspberry Pi
+- NEMA 17 Stepper Motor
+- DRV8825 Stepper Motor Driver
+- Stepper Motor Controller Board
 
 ### Wiring
 
 | DRV8825 | Raspberry Pi GPIO |
-|---|---|
-| ENABLE | 24 |
-| STEP | 23 |
-| DIR | 22 |
+| ------- | ----------------- |
+| ENABLE  | 24                |
+| STEP    | 23                |
+| DIR     | 22                |
 
-M0, M1, M2 (microstepping mode pins) are hardware-controlled via jumpers. Tie all three to GND for full-step mode (default).
+M0, M1, M2 (microstepping mode pins) are hardware-controlled. Set all three switches to OFF for full-step mode (default).
 
 For the optional light sensor:
 
 | Sensor | Raspberry Pi GPIO |
-|---|---|
-| DO | 25 |
+| ------ | ----------------- |
+| DO     | 25                |
 
 ## Prerequisites
 
@@ -46,13 +44,15 @@ See the [python-miio docs](https://python-miio.readthedocs.io/en/latest/discover
 Pin numbers, step mode, speed, and door travel are set in [`main.go`](main.go):
 
 ```go
-p := newProgram(VacuumWatcher(os.Getenv("IP"), os.Getenv("TOKEN")), BoxConfig{
-    PinEnable:    24,
-    PinStep:      23,
-    PinDirection: 22,
-    StepMode:     drv8825.StepModeFull,
-    RPM:          300,
-    DoorSteps:    4000,
+p := newProgram(VacuumWatcher(ip, token), BoxConfig{
+    Stepper: drv8825.Config{
+        PinEnable:    24,
+        PinStep:      23,
+        PinDirection: 22,
+        StepMode:     drv8825.StepModeFull,
+        RPM:          300,
+    },
+    DoorSteps: 4000,
 })
 ```
 
@@ -61,7 +61,7 @@ Adjust `RPM` and `DoorSteps` to match your physical setup.
 ### 3. Deploy
 
 ```sh
-make deploy
+make deploy user=<username> host=<ip>
 ```
 
 This builds the binary for ARM, copies it to the Pi, registers it as a system service, and starts it.
@@ -75,7 +75,7 @@ ssh pi@<host> sudo nano /etc/default/roborock-box
 ```
 
 ```sh
-IP=192.168.1.x
+IP=192.168.x.x
 TOKEN=your_token_here
 ```
 
@@ -106,7 +106,7 @@ To use a light sensor instead of the vacuum Wi-Fi integration, swap the watcher 
 
 ```go
 // replace this:
-p := newProgram(VacuumWatcher(os.Getenv("IP"), os.Getenv("TOKEN")), cfg)
+p := newProgram(VacuumWatcher(ip, token), cfg)
 
 // with this:
 p := newProgram(LightSensorWatcher(25), cfg)

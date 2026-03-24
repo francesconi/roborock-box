@@ -1,12 +1,20 @@
 module  = roborock-box
-host    = 192.168.x.x
-user    = pi
+host   ?=
+user   ?=
 remote  = $(user)@$(host)
 bindir  = /usr/local/bin
 envfile = /etc/default/$(module)
 sshctl  = /tmp/.ssh-$(module)
 ssh     = ssh -o ControlPath=$(sshctl)
 scp     = scp -o ControlPath=$(sshctl)
+
+ifndef user
+$(error user is required: make deploy user=<username> host=<ip>)
+endif
+
+ifndef host
+$(error host is required: make deploy user=<username> host=<ip>)
+endif
 
 .PHONY: build deploy uninstall
 

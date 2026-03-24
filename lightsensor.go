@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/stianeikeland/go-rpio/v4"
@@ -17,11 +16,6 @@ func LightSensorWatcher(pin uint8) WatchFunc {
 }
 
 func watchLightSensor(pin uint8, exit <-chan struct{}, onOpen, onClose func()) error {
-	if err := rpio.Open(); err != nil {
-		return fmt.Errorf("initialize light sensor: %w", err)
-	}
-	defer rpio.Close()
-
 	p := rpio.Pin(pin)
 	p.Input()
 	p.PullUp()
