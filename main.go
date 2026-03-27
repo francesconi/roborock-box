@@ -8,7 +8,7 @@ import (
 
 	"github.com/francesconi/roborock-box/drv8825"
 	"github.com/kardianos/service"
-	"github.com/sirupsen/logrus"
+	miio "github.com/vkorn/go-miio"
 )
 
 const (
@@ -17,8 +17,7 @@ const (
 )
 
 func main() {
-	// Suppress verbose logging from the miio library
-	logrus.SetLevel(logrus.InfoLevel)
+	miio.LOGGER = &noopLogger{}
 
 	// Load IP and TOKEN from the env file so the service works regardless of
 	// whether the init system sources it automatically.
