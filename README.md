@@ -4,6 +4,8 @@ A Raspberry Pi service that automatically opens and closes a motorised box door 
 
 Alternatively, a light sensor can be used instead of the Wi-Fi vacuum integration.
 
+<video src="https://github.com/user-attachments/assets/5732c1a2-0bea-46b3-8eb8-a543b7f7b3a7"></video>
+
 ## Hardware
 
 - Raspberry Pi
