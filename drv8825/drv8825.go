@@ -7,7 +7,7 @@ import (
 	"github.com/stianeikeland/go-rpio/v4"
 )
 
-// defaultRPM is used when SetSpeed has not been called.
+// defaultRPM is used when Config.RPM is not set.
 const defaultRPM uint = 60
 
 // StepMode defines the microstepping resolution of the DRV8825.
@@ -26,7 +26,7 @@ const defaultRPM uint = 60
 // Values assume a standard 1.8°/step motor (e.g. NEMA 17, 200 steps/revolution).
 type StepMode struct {
 	degreePerStep float64
-	m0, m1, m2   bool
+	m0, m1, m2    bool
 }
 
 var (
@@ -121,13 +121,6 @@ func setPinLevel(pin uint8, high bool) {
 	}
 }
 
-func (d *Driver) SetSpeed(rpm uint) {
-	if rpm == 0 {
-		panic("drv8825: rpm must be greater than zero")
-	}
-	d.rpm = rpm
-}
-
 func (d *Driver) Enable() {
 	d.en.Low()
 }
@@ -158,4 +151,3 @@ func (d *Driver) Move(steps int) {
 		time.Sleep(delay)
 	}
 }
-
